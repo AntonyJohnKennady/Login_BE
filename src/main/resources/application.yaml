@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/signup
+    username: postgres
+    password: john@2004
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: true
+
+    properties:
+        hibernate:
+          format_sql: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /slp
+
