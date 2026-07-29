@@ -18,7 +18,7 @@ public class UserService {
     private UserRepository userRepository;
 
     public ResponseEntity<?> getAllUsers() {
-        List<UserResponseDto> users = userRepository.findAll().stream().map(this::converter).toList();
+        List<UserResponseDto> users = userRepository.findByIsDeletedFalse().stream().map(this::converter).toList();
 
         return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel("Users Fetched Successfully", HttpStatus.OK.value(), users));
     }
@@ -36,16 +36,16 @@ public class UserService {
 
     public ResponseEntity<?> getUserById(Long id) {
 
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not Found"));
+        User user = userRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("User Not Found"));
 
         return ResponseEntity.status(HttpStatus.OK).body(new ResponseModel("User Fetched Successfully", HttpStatus.OK.value(), converter(user)));
     }
 
     public ResponseEntity<?> updateUser(Long id, UpdateUserDto updateUserDto) {
 
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not Found"));
+        User user = userRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("User Not Found"));
 
-        if (!user.getEmail().equals(updateUserDto.getEmail()) && userRepository.existsByEmailAndIsDeletedIsFalse(updateUserDto.getEmail())) {
+        if (!user.getEmail().equals(updateUserDto.getEmail()) && userRepository.existsByEmailAndIsDeletedFalse(updateUserDto.getEmail())) {
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new ResponseModel("Email already Exists.", HttpStatus.CONFLICT.value()));
         }
@@ -59,7 +59,7 @@ public class UserService {
     }
 
     public ResponseEntity<?> deleteUser(Long id) {
-        User user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not Found"));
+        User user = userRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("User Not Found"));
 
         user.setIsDeleted(true);
         userRepository.save(user);

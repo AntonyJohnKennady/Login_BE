@@ -9,6 +9,7 @@ import com.example.signup.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,18 +17,22 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public ResponseEntity<?> signup(SignupRequestDto signupRequest) {
 
-        if (userRepository.existsByEmailAndIsDeletedIsFalse(signupRequest.getEmail())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ResponseModel("Email Id "+signupRequest.getEmail()+" already exists.",HttpStatus.BAD_REQUEST.value()));
-        }
+        if (userRepository.existsByEmailAndIsDeletedFalse(signupRequest.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ResponseModel(
+                            "An account with this email address already exists.",
+                            HttpStatus.CONFLICT.value()));        }
 
         User user = new User();
 
         user.setUsername(signupRequest.getUsername());
         user.setEmail(signupRequest.getEmail());
-        user.setPassword(signupRequest.getPassword());
+        user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
 
         userRepository.save(user);
 
@@ -42,9 +47,9 @@ public class AuthService {
 
     public ResponseEntity<?> login(LoginRequestDto loginRequestDto) {
 
-        User user = userRepository.findByEmail(loginRequestDto.getEmail()).orElseThrow(() -> new RuntimeException("The given emailId " + loginRequestDto.getEmail() + " Not Found"));
+        User user = userRepository.findByEmailAndIsDeletedFalse(loginRequestDto.getEmail()).orElseThrow(() -> new RuntimeException("No account found with the email: " + loginRequestDto.getEmail()));
 
-        if(!user.getPassword().equals(loginRequestDto.getPassword())){
+        if(!passwordEncoder.matches(loginRequestDto.getPassword(),user.getPassword())){
             return
                     ResponseEntity.badRequest().body(new ResponseModel("Invalid Password",HttpStatus.BAD_REQUEST.value()));
         }
